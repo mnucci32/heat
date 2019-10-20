@@ -119,7 +119,7 @@ def main():
   # left boundary temperature
   tl = args.left
   T[:numPerSide] = tl
-  T[-numPerSide:] = args.initial
+
   # right boundary heat flux
   qr = args.right
 
@@ -135,9 +135,12 @@ def main():
   # calculate right hand side
   rhs = args.nu * (-K @ T + S)
 
-  # assign boundary conditions and calculate reduce mass matrix
+  # assign boundary conditions and calculate reduced mass matrix
   dirichletInds = list(range(numPerSide))
   neumannInds = list(range(numNodes - numPerSide, numNodes))
+  print("Dirichlet Indices", dirichletInds)
+  print("Neumann Indices", neumannInds)
+  print("Initial Conditions\n", T, "\n")
   Mmod, rhs = fem.AssignDirichletBCs(M, rhs, dirichletInds)
   Minv = np.linalg.inv(Mmod)
 
@@ -153,6 +156,7 @@ def main():
     # solve MT,t = -KT+S
     T += dt * Minv @ rhs
   
+  print("Final Solution")
   print(T)
   
   # ------------------------------------------------------------------

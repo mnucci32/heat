@@ -156,21 +156,24 @@ def AssignNeumannBCs(rhs, elems, qdot, inds):
   for elem in elems:
     if elem.boundaryEdge_[0]:
       length = np.linalg.norm(elem.r01_)
-      indices = elem.VectorIndicesEdge(0)
-      for ii in indices:
-        if ii in inds:
+      edgeIndices = elem.VectorIndicesEdge(0)
+      # if all edge indices are neumann indices, apply BC
+      if all(index in inds for index in edgeIndices):
+        for ii in edgeIndices:
           rhs[ii] += edgeFactor * qdot * length
     if elem.boundaryEdge_[1]:
       length = np.linalg.norm(elem.r12_)
-      indices = elem.VectorIndicesEdge(1)
-      for ii in indices:
-        if ii in inds:
+      edgeIndices = elem.VectorIndicesEdge(1)
+      # if all edge indices are neumann indices, apply BC
+      if all(index in inds for index in edgeIndices):
+        for ii in edgeIndices:
           rhs[ii] += edgeFactor * qdot * length
     if elem.boundaryEdge_[2]:
       length = np.linalg.norm(elem.r20_)
-      indices = elem.VectorIndicesEdge(2)
-      for ii in indices:
-        if ii in inds:
+      edgeIndices = elem.VectorIndicesEdge(2)
+      # if all edge indices are neumann indices, apply BC
+      if all(index in inds for index in edgeIndices):
+        for ii in edgeIndices:
           rhs[ii] += edgeFactor * qdot * length
   return rhs
 
