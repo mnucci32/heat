@@ -75,9 +75,15 @@ def StableTimestep(elems, nu):
 def main():
   # Set up options
   parser = argparse.ArgumentParser()
-  parser.add_argument("-v", "--nu", action="store", dest="nu",
-                     default=1.0, type=float,
-                     help="nu coefficient for heat equation. Default = 1.0")
+  parser.add_argument("-k", "--conductivity", action="store",
+                     dest="conductivity", default=1.0, type=float,
+                     help="thermal conductivity, k. Default = 1.0")
+  parser.add_argument("-c", "--specificHeat", action="store",
+                     dest="specificHeat", default=1.0, type=float,
+                     help="specific heat, cp. Default = 1.0")
+  parser.add_argument("-d", "--density", action="store",
+                     dest="density", default=1.0, type=float,
+                     help="material density, rho. Default = 1.0")
   parser.add_argument("-i", "--initial", action="store", dest="initial",
                      default=100.0, type=float,
                      help="initial temperature. Default = 100.0")
@@ -127,13 +133,14 @@ def main():
   K, M = fem.AssembleMatrices(len(nodes), elems)
   
   # caclulate time step
-  dt = StableTimestep(elems, args.nu)
+  nu = args.conductivity / (args.specificHeat * args.density)
+  dt = StableTimestep(elems, nu)
 
   # calculate source term
   S = np.zeros_like(T)
 
   # calculate right hand side
-  rhs = args.nu * (-K @ T + S)
+  rhs = nu * (-K @ T + S)
 
   # assign boundary conditions and calculate reduced mass matrix
   dirichletInds = list(range(numPerSide))
@@ -147,7 +154,7 @@ def main():
   for _ in range(args.timeSteps):
 
     # calculate right hand side
-    rhs = args.nu * (-K @ T + S)
+    rhs = nu * (-K @ T + S)
 
     # assign boundary conditions
     rhs = fem.AssignNeumannBCs(rhs, elems, qr, neumannInds)
