@@ -89,6 +89,13 @@ class triangle:
   def Id(self):
     return self.id_
 
+  def EdgeConnectivity(self):
+    ec = np.zeros((3, 2))
+    ec[0,:] = [self.connectivity_[1], self.connectivity_[0]]
+    ec[1,:] = [self.connectivity_[2], self.connectivity_[1]]
+    ec[2,:] = [self.connectivity_[0], self.connectivity_[2]]
+    return ec
+
   def Connectivity(self):
     return self.connectivity_
 

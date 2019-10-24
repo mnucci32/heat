@@ -9,6 +9,17 @@ import matplotlib as mpl
 
 mpl.rcParams["font.size"] = 20
 
+def AddEdgesToMap(elem, edgeMap, edgeCount):
+  ec = elem.EdgeConnectivity()
+  for ii in range(ec.shape[0]):
+    candidateEdge = (ec[ii,0], ec[ii,1])
+    if ec[ii,0] > ec[ii,1]:
+      candidateEdge = (ec[ii,1], ec[ii,0])
+    if candidateEdge not in edgeMap:
+      edgeMap[candidateEdge] = edgeCount
+      edgeCount += 1
+  return edgeMap, edgeCount
+
 def DefineGrid(xx, yy):
   nodes = []
   id = 0
@@ -18,6 +29,8 @@ def DefineGrid(xx, yy):
       nodes.append(fem.node(id, coords))
       id += 1
   elems = []
+  edgeMap = {}
+  edgeCount = 0
   id = 0
   for x in range(len(xx) - 1):
     for y in range(len(yy) - 1):
@@ -40,18 +53,33 @@ def DefineGrid(xx, yy):
         topBC = True
 
       elems.append(fem.triangle(id, nodes[bl], nodes[tl], nodes[tr]))
+      edgeMap, edgeCount = AddEdgesToMap(elems[-1], edgeMap, edgeCount)
       if leftBC:
         elems[id].SetEdgeAsBoundary(0)
       if topBC:
         elems[id].SetEdgeAsBoundary(1)
       id += 1
       elems.append(fem.triangle(id, nodes[bl], nodes[tr], nodes[br]))
+      edgeMap, edgeCount = AddEdgesToMap(elems[-1], edgeMap, edgeCount)
       if rightBC:
         elems[id].SetEdgeAsBoundary(1)
       if bottomBC:
         elems[id].SetEdgeAsBoundary(2)
       id += 1
-  return nodes, elems
+    edges = np.zeros((edgeCount, 2), dtype=int)
+    for connectivity, eid in edgeMap.items():
+      edges[eid,:] = [connectivity[0], connectivity[1]]
+    elemsByEdge = np.zeros((len(elems), 3), dtype=int)
+    for jj in range(len(elems)):
+      ec = elems[jj].EdgeConnectivity()
+      for ii in range(ec.shape[0]):
+        if (ec[ii, 0], ec[ii, 1]) in edgeMap:
+          elemsByEdge[jj, ii] = edgeMap[(ec[ii, 0], ec[ii, 1])]
+        elif (ec[ii, 1], ec[ii, 0]) in edgeMap:
+          elemsByEdge[jj, ii] = edgeMap[(ec[ii, 1], ec[ii, 0])]
+        else:
+          print("ERROR: Cant find edge in element list", ec[ii])
+  return nodes, elems, edges, elemsByEdge
 
 def ReshapeCoords(nodes, numI, numJ):
   x = np.zeros((len(nodes), 1))
@@ -110,12 +138,18 @@ def main():
   numPerSide = args.size
   xx = np.linspace(0, 1, numPerSide)
   yy = np.linspace(0, 1, numPerSide)
-  nodes, elems = DefineGrid(xx, yy)
+  nodes, elems, edges, elemsByEdge = DefineGrid(xx, yy)
   x, y = ReshapeCoords(nodes, len(xx), len(yy))
   for node in nodes:
     node.Print()
   for elem in elems:
     elem.Print()
+  for eid in range(edges.shape[0]):
+    print("Edge id {0} connects nodes {1} and {2}".format(eid, edges[eid, 0], \
+      edges[eid, 1]))
+  for eid in range(elemsByEdge.shape[0]):
+    print("Element {0} has edges {1}, {2}, and {3}".format(eid, \
+      elemsByEdge[eid,0], elemsByEdge[eid,1], elemsByEdge[eid,2]))
   numNodes = len(nodes)
 
   # initialize temperature
